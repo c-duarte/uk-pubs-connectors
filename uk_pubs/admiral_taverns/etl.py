@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 import googlemaps
 import pandas
 
-from uk_pubs_connectors.admiral_taverns import AdmiralTavernsConnector
-from uk_pubs_connectors.utils import get_geoinfo
+from uk_pubs.admiral_taverns.connector import AdmiralTavernsConnector
+from uk_pubs.utils import get_geoinfo
 
 
 logger = logging.getLogger(__name__)

@@ -6,7 +6,7 @@ import requests
 
 from lxml import html
 
-from uk_pubs_connectors.utils import mount_html_elements
+from uk_pubs.utils import mount_html_elements
 
 
 logger = logging.getLogger(__name__)
