@@ -1,3 +1,4 @@
+from datetime import date
 import logging
 
 import pandas
@@ -62,5 +63,6 @@ class AdmiralTavernsConnector:
         page_elements = mount_html_elements(html_obj, self.STRUCTURE)
         pubs_list = page_elements['Pubs']
         data = pandas.DataFrame(pubs_list).applymap(', '.join)
+        data['ScrapeDate'] = str(date.today())
 
         return data
