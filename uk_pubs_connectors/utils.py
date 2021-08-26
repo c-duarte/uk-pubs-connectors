@@ -1,6 +1,10 @@
 import logging
+from multiprocessing.pool import ThreadPool
+from typing import Sequence
 
 from lxml import html
+import googlemaps
+import pandas
 
 
 logger = logging.getLogger(__name__)
@@ -13,8 +17,8 @@ the page's elements.
     Args:
         root (html.HtmlElement): the root of the page whose information will be
             mounted.
-        structure (dict): a dictionary containing the structure of the page from
-            the given root. See ``Examples`` section.
+        structure (dict): a dictionary containing the structure of the page
+            from the given root. See ``Examples`` section.
 
     Returns:
         dict: the html elements inside the page, under the given structure.
@@ -69,3 +73,97 @@ the page's elements.
     logger.debug('Mounted page: %s', result)
 
     return result
+
+
+def get_geoinfo(
+    gm_client: googlemaps.Client,
+    search_strings: Sequence[str],
+    n_threads: int = 50
+) -> pandas.DataFrame:
+    '''Return the following information about locations, given their search
+    strings:
+    - Latitude
+    - Longitude
+    - StreetAddress
+    - City
+    - State
+    - Region
+    - Country
+    - PostalCode
+    - FormattedAddress
+    - NutsL1Region (TODO)
+
+    :param gm_client: GoogleMaps client to be used to perform the searches
+    :type gm_client: googlemaps.Client
+    :param search_str: any sequence of strings
+    :type search_str: Sequence[str]
+    :return: DataFrame with all the information above
+    :rtype: pandas.DataFrame
+    '''
+    pool = ThreadPool(n_threads)
+
+    logger.info(
+        'Getting GoogleMaps results for %d search strings using %d threads',
+        len(search_strings), n_threads
+    )
+
+    gm_results = pool.map(gm_client.geocode, search_strings)
+
+    logger.info('Geoinfo data retrieved. Now formatting')
+
+    full_data = []
+
+    for index in range(len(gm_results)):
+        search_string = search_strings[index]
+        result = gm_results[index]
+
+        logger.info('Formatting GoogleMaps results for %s', search_string)
+
+        if len(result) != 0:
+            data = {
+                component['types'][0]: component['short_name']
+                for component in result[0]['address_components']
+            }
+            data.update({
+                'lat': result[0]['geometry']['location']['lat'],
+                'lng': result[0]['geometry']['location']['lng'],
+                'formatted_address': result[0]['formatted_address']
+            })
+        else:
+            logger.warning(
+                '"%s" rendered no response from GoogleMaps',
+                search_string
+            )
+            data = {}
+
+        full_data.append(data)
+
+    full_data = pandas.DataFrame(full_data).fillna('')
+
+    final_data = pandas.DataFrame()
+
+    final_data[['Lat', 'Long']] = full_data[['lat', 'lng']]
+    final_data['StreetAddress'] = (
+        full_data['street_number'] + ', ' + full_data['route']
+    ).str.strip(to_strip=', ')
+    final_data[[
+        'City',
+        'Region',
+        'State',
+        'Country',
+        'PostalCode',
+        'FormattedAddress'
+    ]] = full_data[[
+        'postal_town',
+        'administrative_area_level_2',
+        'administrative_area_level_1',
+        'country',
+        'postal_code',
+        'formatted_address'
+    ]]
+
+    final_data['SearchString'] = search_strings
+
+    final_data.set_index('SearchString', inplace=True)
+
+    return final_data

@@ -1,10 +1,14 @@
-import unittest
+import logging
+
 import pandas
 import requests
 
 from lxml import html
 
 from uk_pubs_connectors.utils import mount_html_elements
+
+
+logger = logging.getLogger(__name__)
 
 
 class AdmiralTavernsConnector:
@@ -32,27 +36,31 @@ class AdmiralTavernsConnector:
         :return: Clean data
         :rtype: pandas.DataFrame
         '''
+        logger.info('Cleaning raw AdmiralTaverns data')
+
         data = raw_data.copy()
 
         data['AnnualRent'] = data['ApproximatePrice']\
-            .str.replace(r'Approximate Ingoings [£]?', '')\
-            .str.replace(r'[.,]', '')\
+            .str.replace(r'Approximate Ingoings [£]?', '', regex=True)\
+            .str.replace(r'[.,]', '', regex=True)\
             .astype('float64')
 
         del data['ApproximatePrice']
 
-        data['source'] = self.NAME
+        data['Source'] = self.NAME
 
         return data
 
     def get(self) -> pandas.DataFrame:
+        logger.info('Getting AdmiralTaverns data from %s', self.URL)
+
         response = requests.get(self.URL)
+
+        logger.info('HTML file retrieved. Getting DOM\'s elements')
+
         html_obj = html.fromstring(response.text)
-
         page_elements = mount_html_elements(html_obj, self.STRUCTURE)
-
         pubs_list = page_elements['Pubs']
-
         data = pandas.DataFrame(pubs_list).applymap(', '.join)
 
         return data
