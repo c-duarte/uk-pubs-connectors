@@ -14,7 +14,7 @@ from uk_pubs_connectors.utils import get_geoinfo
 logger = logging.getLogger(__name__)
 
 
-if __name__ == '__main__':
+def main():
     load_dotenv()
 
     parser = argparse.ArgumentParser(description='Admiral Taverns Pubs ETL')
@@ -93,3 +93,7 @@ if __name__ == '__main__':
 
     # 4. Push to SQL
     # TODO
+
+
+if __name__ == '__main__':
+    main()
