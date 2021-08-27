@@ -1,0 +1,27 @@
+import requests
+
+cookies = {
+    'WSS_FullScreenMode': 'false',
+    '_ga': 'GA1.3.817348466.1630045504',
+    '_gid': 'GA1.3.1908334440.1630045504',
+    'lastPubSearchUrl': 'https%3A//www.stonegatepubpartners.co.uk/run-a-pub/Pages/pub-search.aspx%23%3Fsb%3Ddistance%26q%3DLondon%26d%3D10%26v%3Dlist',
+}
+
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0',
+    'Accept': 'application/json;odata=verbose',
+    'Accept-Language': 'pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3',
+    'Content-Type': 'application/json;odata=verbose',
+    'X-RequestDigest': '0xA2EF8AF4C19940AC92B8459B9B2F08164178BB1AAD9FA404B41929D5EFCCC3D38DF08AF7303CFC11EA2911E16664E2CB3C8D23CCA9CA3EA8978A4ABF18CC056C,27 Aug 2021 06:25:23 -0000',
+    'X-Requested-With': 'XMLHttpRequest',
+    'Origin': 'https://www.stonegatepubpartners.co.uk',
+    'Connection': 'keep-alive',
+    'Referer': 'https://www.stonegatepubpartners.co.uk/run-a-pub/Pages/pub-search.aspx',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-origin',
+}
+
+data = '{"queryText":"contenttype:\\"Pub Marketing Information\\" AND EIPubLatitudeOWSNMBRFLOAT>40 AND EIPubLatitudeOWSNMBRFLOAT<62 AND EIPubLongitudeOWSNMBRFLOAT>-10 AND EIPubLongitudeOWSNMBRFLOAT<10 ","latitude":-100,"longitude":-100,"maxDistance":"10000","sortBy":"distance","skip":0,"take":10000,"maxRows":10000}'
+
+response = requests.post('https://www.stonegatepubpartners.co.uk/run-a-pub/_vti_bin/Brightstarr.EI.Intranet/Pubs/Pubs.svc/GetResultsFromSearch', headers=headers, cookies=cookies, data=data)
