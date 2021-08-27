@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import googlemaps
 import pandas
 
-from uk_pubs.greene_king.connector import GreeneKingConnector
+from uk_pubs.greene_king.connector import GreeneKingAjaxConnector
 from uk_pubs.greene_king.data_processor import GreeneKingDataProcessor
 from uk_pubs.utils import get_geoinfo
 
@@ -50,7 +50,7 @@ def main():
     logger.info('Step 1: Get raw data from website')
     filepath = os.path.join(args.dir, str(today) + '-raw.csv')
     if not os.path.exists(filepath):
-        connector = GreeneKingConnector()
+        connector = GreeneKingAjaxConnector()
         data = connector.get()
         data.to_csv(filepath, index=False)
 
@@ -79,8 +79,11 @@ def main():
     filepath = os.path.join(args.dir, str(today) + '-geo.csv')
     if not os.path.exists(filepath):
         gm_client = googlemaps.Client(os.environ['GOOGLEMAPS_KEY'])
-        data['SearchString'] = data['StreetAddress'] + ', UK'
-        geo_info = get_geoinfo(gm_client, data.loc[:, 'SearchString'])
+        data['SearchString'] = (
+            data['Lat'].astype(str) + ', ' + data['Long'].astype(str)
+        )
+        print(data['SearchString'])
+        geo_info = get_geoinfo(gm_client, data['SearchString'])
 
         data.set_index('SearchString', inplace=True)
         data = geo_info.combine_first(data)
@@ -91,6 +94,9 @@ def main():
         logger.info('Data already available at %s, loading it', filepath)
 
         data = pandas.read_csv(filepath)
+
+    # 4. Push to SQL
+    # TODO
 
 
 if __name__ == '__main__':

@@ -1,17 +1,81 @@
 import logging
+import re
 
 import pandas
 import requests
 
-from lxml import html
+import lxml.html
+import html
 
 from uk_pubs.utils import mount_html_elements
+from uk_pubs.greene_king.constants import BASE_URL
 
 
 logger = logging.getLogger(__name__)
 
 
-class GreeneKingConnector:
+class GreeneKingAjaxConnector:
+    '''Connector with Ajax interface of Greene King data source.'''
+    URL = BASE_URL + '/views/ajax'
+    PAYLOAD_TEMPLATE = {
+        'view_name': 'pub_search',
+        'page': 0,
+        'view_display_id': 'search_results',
+    }
+
+    def get_page(self, page_number: int = 0) -> pandas.DataFrame:
+        '''TODO: Doc'''
+        payload = self.PAYLOAD_TEMPLATE.copy()
+        payload.update({'page': page_number})
+
+        response = requests.post(self.URL, data=payload).json()
+
+        json_data = response[0]['settings'].get('geofield_google_map', {})
+
+        if len(json_data) == 0:
+            return pandas.DataFrame()
+
+        pubs = list(json_data.values())[0]['data']['features']
+
+        page_data = []
+
+        for pub in pubs:
+            geometry = pub['geometry']
+            pub_data = pub['properties']['data']
+
+            page_data.append({
+                'Name': html.unescape(pub_data['field_pub_name_only']),
+                'URL': re.findall(r'href="([^"]+)"', pub_data['title'])[0],
+                'StreetAddress': ', '.join(filter(None, [
+                    pub_data.get('address_line1', ''),
+                    pub_data.get('locality', ''),
+                    pub_data.get('postal_code', ''),
+                ])),
+                'AnnualRent': pub_data.get('field_agreement_annual_rent'),
+                'Lat': geometry['coordinates'][1],
+                'Long': geometry['coordinates'][0],
+            })
+
+        page_data = pandas.DataFrame(page_data)
+
+        return page_data
+
+    def get(self) -> pandas.DataFrame:
+        '''TODO: Doc'''
+        data = []
+        page_number = 0
+
+        while len(page_data := self.get_page(page_number)) != 0:
+            data.append(page_data)
+
+            page_number += 1
+
+        data = pandas.concat(data, ignore_index=True)
+
+        return data
+
+
+class GreeneKingWebsiteConnector:
     '''Connector with Greene King data source for pubs in the UK.'''
     NAME = 'Greene King'
     URL = 'https://www.greenekingpubs.co.uk/pub-search?page={page_number}'
@@ -37,7 +101,7 @@ class GreeneKingConnector:
         :rtype: pandas.DataFrame
         '''
         response = requests.get(self.URL.format(page_number=page_number))
-        dom = html.fromstring(response.text)
+        dom = lxml.html.fromstring(response.text)
         page_elements = mount_html_elements(dom, self.STRUCTURE)
         data = pandas.DataFrame(page_elements['Pubs']).applymap(', '.join)
 
@@ -52,6 +116,6 @@ class GreeneKingConnector:
             data.append(page_data)
             page_number += 1
 
-        data = pandas.concat(data)
+        data = pandas.concat(data, ignore_index=True)
 
         return data
