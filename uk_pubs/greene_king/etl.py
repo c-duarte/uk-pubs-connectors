@@ -4,9 +4,12 @@ import os
 import logging
 
 from dotenv import load_dotenv
+import googlemaps
 import pandas
 
 from uk_pubs.greene_king.connector import GreeneKingConnector
+from uk_pubs.greene_king.data_processor import GreeneKingDataProcessor
+from uk_pubs.utils import get_geoinfo
 
 
 logger = logging.getLogger(__name__)
@@ -49,6 +52,38 @@ def main():
     if not os.path.exists(filepath):
         connector = GreeneKingConnector()
         data = connector.get()
+        data.to_csv(filepath, index=False)
+
+        logger.info('Data saved to %s', filepath)
+    else:
+        logger.info('Data already available at %s, loading it', filepath)
+
+        data = pandas.read_csv(filepath)
+
+    # 2. Clean raw data
+    logger.info('Step 2: Clean raw data')
+    filepath = os.path.join(args.dir, str(today) + '-clean.csv')
+    if not os.path.exists(filepath):
+        processor = GreeneKingDataProcessor()
+        data = processor.process(data)
+        data.to_csv(filepath, index=False)
+
+        logger.info('Data saved to %s', filepath)
+    else:
+        logger.info('Data already available at %s, loading it', filepath)
+
+        data = pandas.read_csv(filepath)
+
+    # 3. Apply geocoding
+    logger.info('Step 3: Get geo information from GoogleMaps')
+    filepath = os.path.join(args.dir, str(today) + '-geo.csv')
+    if not os.path.exists(filepath):
+        gm_client = googlemaps.Client(os.environ['GOOGLEMAPS_KEY'])
+        data['SearchString'] = data['StreetAddress'] + ', UK'
+        geo_info = get_geoinfo(gm_client, data.loc[:, 'SearchString'])
+
+        data.set_index('SearchString', inplace=True)
+        data = geo_info.combine_first(data)
         data.to_csv(filepath, index=False)
 
         logger.info('Data saved to %s', filepath)

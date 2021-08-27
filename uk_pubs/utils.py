@@ -5,6 +5,7 @@ from typing import Sequence
 from lxml import html
 import googlemaps
 import pandas
+import numpy
 
 
 logger = logging.getLogger(__name__)
@@ -162,8 +163,9 @@ def get_geoinfo(
         'formatted_address'
     ]]
 
-    final_data['SearchString'] = search_strings
+    final_data.replace('', numpy.nan, inplace=True)
 
+    final_data['SearchString'] = search_strings
     final_data.set_index('SearchString', inplace=True)
 
     return final_data
