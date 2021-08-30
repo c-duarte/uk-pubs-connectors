@@ -1,3 +1,4 @@
+from datetime import date
 import logging
 import re
 
@@ -8,7 +9,7 @@ import lxml.html
 import html
 
 from uk_pubs.utils import mount_html_elements
-from uk_pubs.greene_king.constants import BASE_URL
+from uk_pubs.greene_king.constants import BASE_URL, NAME
 
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,8 @@ class GreeneKingAjaxConnector:
             page_number += 1
 
         data = pandas.concat(data, ignore_index=True)
+        data['ScrapeDate'] = str(date.today())
+        data['Source'] = NAME
 
         return data
 
@@ -117,5 +120,7 @@ class GreeneKingWebsiteConnector:
             page_number += 1
 
         data = pandas.concat(data, ignore_index=True)
+        data['ScrapeDate'] = str(date.today())
+        data['Source'] = NAME
 
         return data
