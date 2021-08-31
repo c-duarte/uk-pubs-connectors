@@ -4,6 +4,8 @@ import logging
 import pandas
 import requests
 
+from uk_pubs.punch_pubs.constants import NAME
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,5 +25,6 @@ class PunchPubsConnector:
         response = requests.get(self.URL, headers=self.HEADERS).json()
         data = pandas.json_normalize(response, sep='.')
         data['ScrapeDate'] = str(date.today())
+        data['Source'] = NAME
 
         return data

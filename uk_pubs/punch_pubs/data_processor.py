@@ -2,8 +2,6 @@ import html
 
 import pandas
 
-from uk_pubs.punch_pubs.constants import NAME
-
 
 class PunchPubsDataProcessor:
     '''Treats data from Punch Pubs'''
@@ -25,6 +23,8 @@ class PunchPubsDataProcessor:
             'latlng.lng',
             'address',
             'town',
+            'Source',
+            'ScrapeDate'
         ]]
         output['outgoing_value'] = output['outgoing_value']\
             .str.replace(r'[ ,]', '', regex=True)\
@@ -57,7 +57,5 @@ class PunchPubsDataProcessor:
         }, inplace=True)
 
         output['Name'] = output['Name'].apply(html.unescape)
-
-        output['Source'] = NAME
 
         return output
