@@ -1,5 +1,4 @@
 from datetime import date
-from pprint import pprint
 import logging
 
 import lxml.html
