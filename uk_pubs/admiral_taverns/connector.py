@@ -48,8 +48,6 @@ class AdmiralTavernsConnector:
 
         del data['ApproximatePrice']
 
-        data['Source'] = self.NAME
-
         return data
 
     def get(self) -> pandas.DataFrame:
@@ -63,6 +61,8 @@ class AdmiralTavernsConnector:
         page_elements = mount_html_elements(html_obj, self.STRUCTURE)
         pubs_list = page_elements['Pubs']
         data = pandas.DataFrame(pubs_list).applymap(', '.join)
+
         data['ScrapeDate'] = str(date.today())
+        data['Source'] = self.NAME
 
         return data
