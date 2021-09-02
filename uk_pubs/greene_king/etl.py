@@ -32,8 +32,8 @@ def main():
     parser.add_argument(
         '-l', '--logs-dir',
         help='Path to the logs directory. Defaults to the '
-        '<current_directory>\\logs\\admiral_taverns',
-        default='logs\\admiral_taverns'
+        '<current_directory>\\logs\\greene_king',
+        default='logs\\greene_king'
     )
 
     args = parser.parse_args()
