@@ -1,6 +1,10 @@
 import html
+import logging
 
 import pandas
+
+
+logger = logging.getLogger(__name__)
 
 
 class PunchPubsDataProcessor:
@@ -14,6 +18,8 @@ class PunchPubsDataProcessor:
         :return: Clean and transformed data
         :rtype: pandas.DataFrame
         '''
+        logger.info('Processing raw data from Punch Pubs')
+
         output = pandas.DataFrame()
         output = input.loc[:, [
             'outgoing_value',
@@ -57,5 +63,7 @@ class PunchPubsDataProcessor:
         }, inplace=True)
 
         output['Name'] = output['Name'].apply(html.unescape)
+
+        logger.info('Successfully processed data from Punch Pubs')
 
         return output

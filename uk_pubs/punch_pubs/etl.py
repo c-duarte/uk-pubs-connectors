@@ -48,52 +48,42 @@ def main():
 
     # 1. Save raw data
     logger.info('Step 1: Get raw data from website')
-    filepath = os.path.join(args.dir, str(today) + '-raw.csv')
-    if not os.path.exists(filepath):
+    dest = os.path.join(args.dir, str(today) + '-raw.csv')
+
+    if not os.path.exists(dest):
         connector = PunchPubsConnector()
-        data = connector.get()
-        data.to_csv(filepath, index=False)
+        output = connector.get()
+        output.to_csv(dest, index=False)
 
-        logger.info('Data saved to %s', filepath)
-    else:
-        logger.info('Data already available at %s, loading it', filepath)
-
-        data = pandas.read_csv(filepath)
+        logger.info('Raw data saved to %s', dest)
 
     # 2. Clean raw data
     logger.info('Step 2: Clean raw data')
-    filepath = os.path.join(args.dir, str(today) + '-clean.csv')
-    if not os.path.exists(filepath):
+    input = pandas.read_csv(dest, dtype='object')
+    dest = os.path.join(args.dir, str(today) + '-clean.csv')
+
+    if not os.path.exists(dest):
         processor = PunchPubsDataProcessor()
-        data = processor.process(data)
-        data.to_csv(filepath, index=False)
+        output = processor.process(input)
+        output.to_csv(dest, index=False)
 
-        logger.info('Data saved to %s', filepath)
-    else:
-        logger.info('Data already available at %s, loading it', filepath)
-
-        data = pandas.read_csv(filepath)
+        logger.info('Processed data saved to %s', dest)
 
     # 3. Apply geocoding
     logger.info('Step 3: Get geo information from GoogleMaps')
-    filepath = os.path.join(args.dir, str(today) + '-geo.csv')
-    if not os.path.exists(filepath):
+    input = pandas.read_csv(dest, dtype='object')
+    dest = os.path.join(args.dir, str(today) + '-geo.csv')
+
+    if not os.path.exists(dest):
+        input['SearchString'] = input['Lat'] + ', ' + input['Long']
+        input.set_index('SearchString', inplace=True)
+
         gm_client = googlemaps.Client(os.environ['GOOGLEMAPS_KEY'])
-        data['SearchString'] = (
-            data['Lat'].astype(str) + ', ' + data['Long'].astype(str)
-        )
-        print(data['SearchString'])
-        geo_info = get_geoinfo(gm_client, data['SearchString'])
+        geo_info = get_geoinfo(gm_client, input.index)
+        output = geo_info.combine_first(input)
 
-        data.set_index('SearchString', inplace=True)
-        data = geo_info.combine_first(data)
-        data.to_csv(filepath, index=False)
-
-        logger.info('Data saved to %s', filepath)
-    else:
-        logger.info('Data already available at %s, loading it', filepath)
-
-        data = pandas.read_csv(filepath)
+        output.to_csv(dest, index=False)
+        logger.info('Data saved to %s', dest)
 
     # 4. Push to SQL
     # TODO
