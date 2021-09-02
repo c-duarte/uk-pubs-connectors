@@ -1,7 +1,5 @@
 import pandas
 
-from uk_pubs.punch_pubs.constants import NAME
-
 
 class StonegateDataProcessor:
     '''Treats data from Stonegate'''
@@ -23,7 +21,9 @@ class StonegateDataProcessor:
             'Latitude',
             'Longitude',
             'PubAddress',
-            'Postcode'
+            'Postcode',
+            'ScrapeDate',
+            'Source'
         ]]
 
         output.rename(columns={
@@ -35,7 +35,5 @@ class StonegateDataProcessor:
             'PubAddress': 'StreetAddress',
             'Postcode': 'PostalCode',
         }, inplace=True)
-
-        output['Source'] = NAME
 
         return output
