@@ -118,7 +118,7 @@ def get_geoinfo(
         search_string = search_strings[index]
         result = gm_results[index]
 
-        logger.info('Formatting GoogleMaps results for %s', search_string)
+        logger.debug('Formatting GoogleMaps results for %s', search_string)
 
         if len(result) != 0:
             data = {
