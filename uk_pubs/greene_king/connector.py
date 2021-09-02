@@ -1,15 +1,10 @@
 from datetime import date
 import logging
-import re
 
 import pandas
 import requests
 
-import lxml.html
-import html
-
-from uk_pubs.utils import mount_html_elements
-from uk_pubs.greene_king.constants import BASE_URL, NAME
+from uk_pubs.greene_king.constants import BASE_URL
 
 
 logger = logging.getLogger(__name__)
@@ -17,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class GreeneKingAjaxConnector:
     '''Connector with Ajax interface of Greene King data source.'''
+    NAME = 'Greene King'
     URL = BASE_URL + '/views/ajax'
     PAYLOAD_TEMPLATE = {
         'view_name': 'pub_search',
@@ -25,7 +21,15 @@ class GreeneKingAjaxConnector:
     }
 
     def get_page(self, page_number: int = 0) -> pandas.DataFrame:
-        '''TODO: Doc'''
+        '''Get data on pubs from a specific page, provided it's page number.
+
+        :param page_number: The page number, defaults to 0.
+        :type page_number: int, optional
+        :return: Dataframe with the data on Pubs according to the given page
+        :rtype: pandas.DataFrame
+        '''
+        logger.info('Getting pubs data from page %d', page_number)
+
         payload = self.PAYLOAD_TEMPLATE.copy()
         payload.update({'page': page_number})
 
@@ -37,90 +41,31 @@ class GreeneKingAjaxConnector:
             return pandas.DataFrame()
 
         pubs = list(json_data.values())[0]['data']['features']
+        data = pandas.json_normalize(pubs)
 
-        page_data = []
-
-        for pub in pubs:
-            geometry = pub['geometry']
-            pub_data = pub['properties']['data']
-
-            page_data.append({
-                'Name': html.unescape(pub_data['field_pub_name_only']),
-                'URL': re.findall(r'href="([^"]+)"', pub_data['title'])[0],
-                'StreetAddress': ', '.join(filter(None, [
-                    pub_data.get('address_line1', ''),
-                    pub_data.get('locality', ''),
-                    pub_data.get('postal_code', ''),
-                ])),
-                'AnnualRent': pub_data.get('field_agreement_annual_rent'),
-                'Lat': geometry['coordinates'][1],
-                'Long': geometry['coordinates'][0],
-            })
-
-        page_data = pandas.DataFrame(page_data)
-
-        return page_data
-
-    def get(self) -> pandas.DataFrame:
-        '''TODO: Doc'''
-        data = []
-        page_number = 0
-
-        while len(page_data := self.get_page(page_number)) != 0:
-            data.append(page_data)
-
-            page_number += 1
-
-        data = pandas.concat(data, ignore_index=True)
-        data['ScrapeDate'] = str(date.today())
-        data['Source'] = NAME
+        logger.info('Successfully retrieve pubs data of %s', date.today())
 
         return data
 
+    def get(self) -> pandas.DataFrame:
+        '''Get raw data on Pubs from the Greene King vendor.
 
-class GreeneKingWebsiteConnector:
-    '''Connector with Greene King data source for pubs in the UK.'''
-    NAME = 'Greene King'
-    URL = 'https://www.greenekingpubs.co.uk/pub-search?page={page_number}'
-    STRUCTURE = {
-        'Pubs': [
-            './/section[@class="search-results"]//div[@class="card"]',
-            {
-                'Name': './/h3/a/text()',
-                'URL': './/div[@class = "image"]/a/@href',
-                'StreetAddress': './/div[@class = "content"]//h4/text()',
-                'Description': './/div[@class = "image"]/span/text()'
-            }
-        ]
-    }
-
-    def get_page(self, page_number: int = 0) -> pandas.DataFrame:
-        '''Get specific page of the pubs search results.
-
-        :param page_number: Number of the page to get (defaults to 0)
-        :type page_number: int, optional
-        :return: DataFrame with the fields
-            - TODO
+        :return: Dataframe with data on pubs, according to the vendor
+        specifications
         :rtype: pandas.DataFrame
         '''
-        response = requests.get(self.URL.format(page_number=page_number))
-        dom = lxml.html.fromstring(response.text)
-        page_elements = mount_html_elements(dom, self.STRUCTURE)
-        data = pandas.DataFrame(page_elements['Pubs']).applymap(', '.join)
-
-        return data
-
-    def get(self) -> pandas.DataFrame:
         data = []
         page_number = 0
 
         while not (page_data := self.get_page(page_number)).empty:
-            logger.info('Got %d pubs on page %d', len(page_data), page_number)
             data.append(page_data)
             page_number += 1
 
-        data = pandas.concat(data, ignore_index=True)
-        data['ScrapeDate'] = str(date.today())
-        data['Source'] = NAME
+        if len(data) == 0:
+            data = pandas.DataFrame()
+        else:
+            data = pandas.concat(data, ignore_index=True)
+            data['ScrapeDate'] = str(date.today())
+            data['Source'] = self.NAME
 
         return data
