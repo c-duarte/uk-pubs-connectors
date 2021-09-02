@@ -2,6 +2,9 @@ import logging
 import pandas
 
 
+logger = logging.getLogger(__name__)
+
+
 class WellingtonPubCompanyDataProcessor:
     '''Treats data from Wellington Pub Company'''
 
@@ -14,30 +17,19 @@ class WellingtonPubCompanyDataProcessor:
         :return: Clean and transformed data
         :rtype: pandas.DataFrame
         '''
+        logger.info('Processing raw data from Wellington Pub Company')
+
         output = input.copy()
         output.drop(
             columns=['ID', 'Tags', 'Description', 'NegotiatorMailURL'],
             inplace=True
         )
 
-        output[['Name', 'Address']] = output['NameAddress']\
+        output[['Name', 'StreetAddress']] = output['NameAddress']\
             .str.extract(r'^([^,]+), (.+)$')
 
         output.drop(columns=['NameAddress'], inplace=True)
 
+        logger.info('Successfully processed data from Punch Pubs')
+
         return output
-
-
-if __name__ == '__main__':
-    from pprint import pprint
-    from uk_pubs.wellington_pub_company.connector import \
-        WellingtonPubCompanyConnector
-
-    con = WellingtonPubCompanyConnector()
-    data = con.get()
-
-    data_processor = WellingtonPubCompanyDataProcessor()
-
-    data = data_processor.process(data)
-
-    pprint(data)
