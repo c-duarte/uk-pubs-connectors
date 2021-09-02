@@ -8,6 +8,7 @@ import googlemaps
 import pandas
 
 from uk_pubs.admiral_taverns.connector import AdmiralTavernsConnector
+from uk_pubs.admiral_taverns.data_processor import AdmiralTavernsDataProcessor
 from uk_pubs.utils import get_geoinfo
 
 
@@ -45,12 +46,11 @@ def main():
         level=logging.INFO
     )
 
-    connector = AdmiralTavernsConnector()
-
     # 1. Save raw data
     logger.info('Step 1: Get raw data from website')
     filepath = os.path.join(args.dir, str(today) + '-raw.csv')
     if not os.path.exists(filepath):
+        connector = AdmiralTavernsConnector()
         data = connector.get()
         data.to_csv(filepath, index=False)
 
@@ -64,7 +64,8 @@ def main():
     logger.info('Step 2: Clean raw data from website')
     filepath = os.path.join(args.dir, str(today) + '-clean.csv')
     if not os.path.exists(filepath):
-        data = connector.clean(data)
+        processor = AdmiralTavernsDataProcessor()
+        data = processor.process(data)
         data.to_csv(filepath, index=False)
 
         logger.info('Data saved to %s', filepath)
@@ -77,9 +78,10 @@ def main():
     logger.info('Step 3: Get geo information from GoogleMaps')
     filepath = os.path.join(args.dir, str(today) + '-geo.csv')
     if not os.path.exists(filepath):
-        gm_client = googlemaps.Client(os.environ['GOOGLEMAPS_KEY'])
         data['SearchString'] = data['StreetAddress'] + ', UK'
-        geo_info = get_geoinfo(gm_client, data.loc[:, 'SearchString'])
+
+        gm_client = googlemaps.Client(os.environ['GOOGLEMAPS_KEY'])
+        geo_info = get_geoinfo(gm_client, data['SearchString'])
 
         data.set_index('SearchString', inplace=True)
         data = geo_info.combine_first(data)

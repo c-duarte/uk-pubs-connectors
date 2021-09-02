@@ -29,27 +29,6 @@ class AdmiralTavernsConnector:
         ]
     }
 
-    def clean(self, raw_data: pandas.DataFrame) -> pandas.DataFrame:
-        '''Clean the raw data from the website.
-
-        :param raw_data: Raw data from the website
-        :type raw_data: pandas.DataFrame
-        :return: Clean data
-        :rtype: pandas.DataFrame
-        '''
-        logger.info('Cleaning raw AdmiralTaverns data')
-
-        data = raw_data.copy()
-
-        data['AnnualRent'] = data['ApproximatePrice']\
-            .str.replace(r'Approximate Ingoings [£]?', '', regex=True)\
-            .str.replace(r'[.,]', '', regex=True)\
-            .astype('float64')
-
-        del data['ApproximatePrice']
-
-        return data
-
     def get(self) -> pandas.DataFrame:
         logger.info('Getting AdmiralTaverns data from %s', self.URL)
 
@@ -64,5 +43,10 @@ class AdmiralTavernsConnector:
 
         data['ScrapeDate'] = str(date.today())
         data['Source'] = self.NAME
+
+        logger.info(
+            'Admiral taverns data of %s successfully retrieved',
+            date.today()
+        )
 
         return data
